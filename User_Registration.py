@@ -127,5 +127,34 @@ class TestUserRegistration(unittest.TestCase):
         self.assertFalse(result['success'])  # Ensures registration fails due to the email already being registered.
         self.assertEqual(result['error'], "Email already registered")  # Checks the specific error message.
 
+    # Added Test
+    def test_empty_email(self):
+        """
+        Test case for empty email.
+        It verifies that attempting to register with an empty email results in an error.
+        """
+        result = self.registration.register("", "Password123", "Password123")
+        self.assertFalse(result['success'])  # Ensures registration fails due to empty email.
+        self.assertEqual(result['error'], "Invalid email format")  # Checks the specific error message.
+
+    def test_empty_password(self):
+        """
+        Test case for empty password.
+        It verifies that attempting to register with an empty password results in an error.
+        """
+        result = self.registration.register("user@example.com", "", "")
+        self.assertFalse(result['success'])  # Ensures registration fails due to empty password.
+        self.assertEqual(result['error'], "Password is not strong enough")  # Checks the specific error message.
+
+    def test_empty_confirm_password(self):
+        """
+        Test case for empty confirmation password.
+        It verifies that attempting to register with an empty confirmation password fails.
+        """
+        result = self.registration.register("user@example.com", "Password123", "")
+        self.assertFalse(result['success'])  # Ensures registration fails due to empty confirm password.
+        self.assertEqual(result['error'], "Passwords do not match")  # Checks the specific error message.
+
+
 if __name__ == '__main__':
     unittest.main()

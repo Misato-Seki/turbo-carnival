@@ -278,8 +278,7 @@ class RestaurantMenu:
             bool: True if the item is available, False otherwise.
         """
         return item_name in self.available_items
-
-
+    
 # Unit tests for OrderPlacement class
 class TestOrderPlacement(unittest.TestCase):
     """
@@ -344,6 +343,17 @@ class TestOrderPlacement(unittest.TestCase):
             self.assertFalse(result["success"])
             self.assertEqual(result["message"], "Payment failed")
 
+    # Added Test
+    def test_calculate_total_empty_cart(self):
+        """
+        Test case for calculating the total cost of an empty cart.
+        """
+        total_info = self.cart.calculate_total()
+        self.assertEqual(total_info["subtotal"], 0.0)
+        self.assertEqual(total_info["tax"], 0.0)
+        self.assertEqual(total_info["delivery_fee"], 5.0)  # Delivery fee should still apply.
+        self.assertEqual(total_info["total"], 5.0)  # Total should be equal to delivery fee when cart is empty.
 
+    
 if __name__ == "__main__":
     unittest.main()

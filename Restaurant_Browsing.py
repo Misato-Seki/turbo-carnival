@@ -199,6 +199,32 @@ class TestRestaurantBrowsing(unittest.TestCase):
         self.assertEqual(len(results), 1)  # Only one restaurant should match all the filters
         self.assertEqual(results[0]['name'], "Italian Bistro")  # The result should be "Italian Bistro"
 
+    # Added Test
+    def test_search_by_invalid_cuisine(self):
+        """
+        Test searching for restaurants with an invalid or non-existent cuisine type.
+        """
+        results = self.browsing.search_by_cuisine("NonExistentCuisine")
+        self.assertEqual(len(results), 0)  # No restaurants should match a non-existent cuisine
+        self.assertTrue(all([restaurant['cuisine'] != "NonExistentCuisine" for restaurant in results]))  # No restaurant should match the invalid cuisine
+
+    def test_search_by_invalid_location(self):
+        """
+        Test searching for restaurants with an invalid or non-existent location.
+        """
+        results = self.browsing.search_by_location("Nowhere")
+        self.assertEqual(len(results), 0)  # No restaurants should match a non-existent location
+        self.assertTrue(all([restaurant['location'] != "Nowhere" for restaurant in results]))  # No restaurant should match the invalid location
+
+    # def test_search_by_invalid_rating(self):
+    #     """
+    #     Test searching for restaurants with an invalid or impossible rating (e.g., a negative rating).
+    #     """
+    #     results = self.browsing.search_by_rating(-1.0)
+    #     self.assertEqual(len(results), 0)  # No restaurants should have a negative rating
+    #     self.assertTrue(all([restaurant['rating'] >= 0 for restaurant in results]))  # All restaurants should have valid ratings
+
+
 
 if __name__ == '__main__':
     unittest.main()

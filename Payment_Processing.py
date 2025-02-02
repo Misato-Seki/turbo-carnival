@@ -182,6 +182,36 @@ class TestPaymentProcessing(unittest.TestCase):
         result = self.payment_processing.process_payment(order, "bitcoin", payment_details)
         self.assertIn("Error: Invalid payment method", result)
 
+    # Added Test
+    def test_validate_payment_method_empty_details(self):
+        """
+        Test case for validation failure when payment details are empty.
+        """
+        payment_details = {}
+        with self.assertRaises(ValueError) as context:
+            self.payment_processing.validate_payment_method("credit_card", payment_details)
+        self.assertEqual(str(context.exception), "Invalid credit card details")
+
+    def test_validate_payment_method_missing_card_details(self):
+        """
+        Test case for validation failure when required credit card details are missing.
+        """
+        payment_details = {"expiry_date": "12/25", "cvv": "123"}  # Missing card number
+        with self.assertRaises(ValueError) as context:
+            self.payment_processing.validate_payment_method("credit_card", payment_details)
+        self.assertEqual(str(context.exception), "Invalid credit card details")
+
+    # def test_process_payment_empty_order(self):
+    #     """
+    #     Test case for payment processing failure when order details are empty (no amount).
+    #     """
+    #     order = {}
+    #     payment_details = {"card_number": "1234567812345678", "expiry_date": "12/25", "cvv": "123"}
+        
+    #     result = self.payment_processing.process_payment(order, "credit_card", payment_details)
+    #     self.assertIn("Error: Invalid payment method", result)  # The method will try to process but fail because order is empty
+
+
 
 if __name__ == "__main__":
     unittest.main()  # Run the unit tests.
