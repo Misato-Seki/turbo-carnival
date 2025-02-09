@@ -248,6 +248,18 @@ class UserProfile:
             delivery_address (str): The user's delivery address.
         """
         self.delivery_address = delivery_address
+        self.favorites = []
+
+    def add_favorite(self, restaurant_name):
+        if restaurant_name not in self.favorites:
+            self.favorites.append(restaurant_name)
+
+    def remove_favorite(self, restaurant_name):
+        if restaurant_name in self.favorites:
+            self.favorites.remove(restaurant_name)
+
+    def view_favorites(self):
+        return self.favorites
 
 
 # RestaurantMenu Class (for simulating available menu items)
