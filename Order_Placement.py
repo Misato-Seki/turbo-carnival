@@ -256,7 +256,20 @@ class UserProfile:
         self.delivery_address = delivery_address
         self.favorites = []
         self.ratings = {}
+        self.addresses = {}
+        self.current_address = None
 
+    def add_address(self, label, address):
+        self.addresses[label] = address
+
+    def switch_address(self, label):
+        if label in self.addresses:
+            self.current_address = self.addresses[label]
+
+    def remove_address(self, label):
+        if label in self.addresses:
+            del self.addresses[label]
+    
     def add_favorite(self, restaurant_name):
         if restaurant_name not in self.favorites:
             self.favorites.append(restaurant_name)

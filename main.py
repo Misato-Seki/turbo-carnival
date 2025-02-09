@@ -215,6 +215,25 @@ class MainAppFrame(tk.Frame):
         # 注文状況を更新するボタン（テスト用）
         tk.Button(self, text="Update Status", command=self.update_status).pack(side="left", padx=5)
 
+        # 住所を追加するボタン
+        tk.Button(self, text="Add Address", command=self.add_address).pack(side="left", padx=5)
+        # 住所を切り替えるボタン
+        tk.Button(self, text="Switch Address", command=self.switch_address).pack(side="left", padx=5)
+        # 住所を削除するボタン
+        tk.Button(self, text="Remove Address", command=self.remove_address).pack(side="left", padx=5)
+
+    def add_address(self):
+        add_address_popup = AddAddressPopup(self, self.master.registration.users[self.user_email]["addresses"])
+        self.wait_window(add_address_popup)
+
+    def switch_address(self):
+        switch_address_popup = SwitchAddressPopup(self, self.master.registration.users[self.user_email]["addresses"])
+        self.wait_window(switch_address_popup)
+
+    def remove_address(self):
+        remove_address_popup = RemoveAddressPopup(self, self.master.registration.users[self.user_email]["addresses"])
+        self.wait_window(remove_address_popup)
+
     def update_status(self):
         # ここではテスト用にステータスを変更します
         new_status = "Out for Delivery"
@@ -262,6 +281,65 @@ class MainAppFrame(tk.Frame):
     def rate_dish(self):
         rate_dish_popup = RateDishPopup(self, self.master.registration.users[self.user_email]["ratings"])
         self.wait_window(rate_dish_popup)
+
+class AddAddressPopup(tk.Toplevel):
+    def __init__(self, master, addresses):
+        super().__init__(master)
+        self.title("Add Address")
+
+        tk.Label(self, text="Label:").pack(pady=5)
+        self.label_entry = tk.Entry(self)
+        self.label_entry.pack(pady=5)
+
+        tk.Label(self, text="Address:").pack(pady=5)
+        self.address_entry = tk.Entry(self)
+        self.address_entry.pack(pady=5)
+
+        tk.Button(self, text="Submit", command=self.submit_address).pack(pady=10)
+
+    def submit_address(self):
+        label = self.label_entry.get()
+        address = self.address_entry.get()
+        self.master.addresses[label] = address
+        messagebox.showinfo("Success", f"Added address: {label}")
+        self.destroy()
+
+class SwitchAddressPopup(tk.Toplevel):
+    def __init__(self, master, addresses):
+        super().__init__(master)
+        self.title("Switch Address")
+
+        tk.Label(self, text="Select Address:").pack(pady=5)
+        self.address_var = tk.StringVar()
+        self.address_var.set(list(addresses.keys())[0])
+        tk.OptionMenu(self, self.address_var, *addresses.keys()).pack(pady=5)
+
+        tk.Button(self, text="Switch", command=self.switch_address).pack(pady=10)
+
+    def switch_address(self):
+        label = self.address_var.get()
+        self.master.current_address = self.master.addresses[label]
+        messagebox.showinfo("Success", f"Switched to address: {label}")
+        self.destroy()
+
+class RemoveAddressPopup(tk.Toplevel):
+    def __init__(self, master, addresses):
+        super().__init__(master)
+        self.title("Remove Address")
+
+        tk.Label(self, text="Select Address:").pack(pady=5)
+        self.address_var = tk.StringVar()
+        self.address_var.set(list(addresses.keys())[0])
+        tk.OptionMenu(self, self.address_var, *addresses.keys()).pack(pady=5)
+
+        tk.Button(self, text="Remove", command=self.remove_address).pack(pady=10)
+
+    def remove_address(self):
+        label = self.address_var.get()
+        del self.master.addresses[label]
+        messagebox.showinfo("Success", f"Removed address: {label}")
+        self.destroy()
+
 
 class RateDishPopup(tk.Toplevel):
     def __init__(self, master, ratings):
