@@ -155,6 +155,12 @@ class OrderPlacement:
         self.cart = cart
         self.user_profile = user_profile
         self.restaurant_menu = restaurant_menu
+        self.status = "Pending"
+        self.notify = lambda status: None  # Placeholder for notification 
+    
+    def update_status(self, new_status):
+        self.status = new_status
+        self.notify(new_status)
 
     def validate_order(self):
         """
