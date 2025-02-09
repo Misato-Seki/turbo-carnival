@@ -198,6 +198,17 @@ class MainAppFrame(tk.Frame):
         tk.Button(action_frame, text="View Cart", command=self.view_cart).pack(side="left", padx=5)
         tk.Button(action_frame, text="Checkout", command=self.checkout).pack(side="left", padx=5)
 
+        # Show Checkout Popup
+        checkout_popup = CheckoutPopup(self, self.order_placement)
+        self.wait_window(checkout_popup)
+
+        # お気に入りレストラン表示ボタン
+        tk.Button(self, text="View Favorites", command=self.view_favorites).pack(side="left", padx=5)
+
+    def view_favorites(self):
+        favorites_view = FavoritesViewPopup(self, self.master.registration.users[self.user_email]["favorites"])
+        self.wait_window(favorites_view)
+
     def search_restaurants(self):
         self.results_tree.delete(*self.results_tree.get_children())
         cuisine = self.cuisine_var.get().strip()
@@ -228,10 +239,16 @@ class MainAppFrame(tk.Frame):
         if not validation["success"]:
             messagebox.showerror("Error", validation["message"])
             return
+class FavoritesViewPopup(tk.Toplevel):
+    def __init__(self, master, favorites):
+        super().__init__(master)
+        self.title("Favorite Restaurants")
 
-        # Show Checkout Popup
-        checkout_popup = CheckoutPopup(self, self.order_placement)
-        self.wait_window(checkout_popup)
+        if not favorites:
+            tk.Label(self, text="No favorite restaurants").pack(pady=20)
+        else:
+            for restaurant in favorites:
+                tk.Label(self, text=restaurant).pack()
 
 
 class AddItemPopup(tk.Toplevel):
