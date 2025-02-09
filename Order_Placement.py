@@ -249,6 +249,7 @@ class UserProfile:
         """
         self.delivery_address = delivery_address
         self.favorites = []
+        self.ratings = {}
 
     def add_favorite(self, restaurant_name):
         if restaurant_name not in self.favorites:
@@ -260,6 +261,13 @@ class UserProfile:
 
     def view_favorites(self):
         return self.favorites
+    
+    def add_rating(self, dish_name, rating):
+        if 1 <= rating <= 5:
+            self.ratings[dish_name] = rating
+
+    def view_rating(self, dish_name):
+        return self.ratings.get(dish_name)
 
 
 # RestaurantMenu Class (for simulating available menu items)
