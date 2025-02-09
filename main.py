@@ -208,6 +208,22 @@ class MainAppFrame(tk.Frame):
         # 料理の評価を表示するボタン
         tk.Button(self, text="Rate Dish", command=self.rate_dish).pack(side="left", padx=5)
 
+        # 注文状況を表示するラベル
+        self.status_label = tk.Label(self, text="Order Status: Pending")
+        self.status_label.pack(pady=10)
+
+        # 注文状況を更新するボタン（テスト用）
+        tk.Button(self, text="Update Status", command=self.update_status).pack(side="left", padx=5)
+
+    def update_status(self):
+        # ここではテスト用にステータスを変更します
+        new_status = "Out for Delivery"
+        self.master.order.update_status(new_status)
+        self.status_label.config(text=f"Order Status: {new_status}")
+
+    def notify(self, status):
+        messagebox.showinfo("Order Status Update", f"Your order status is now: {status}")
+
     def view_favorites(self):
         favorites_view = FavoritesViewPopup(self, self.master.registration.users[self.user_email]["favorites"])
         self.wait_window(favorites_view)
