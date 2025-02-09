@@ -205,6 +205,9 @@ class MainAppFrame(tk.Frame):
         # お気に入りレストラン表示ボタン
         tk.Button(self, text="View Favorites", command=self.view_favorites).pack(side="left", padx=5)
 
+        # 料理の評価を表示するボタン
+        tk.Button(self, text="Rate Dish", command=self.rate_dish).pack(side="left", padx=5)
+
     def view_favorites(self):
         favorites_view = FavoritesViewPopup(self, self.master.registration.users[self.user_email]["favorites"])
         self.wait_window(favorites_view)
@@ -239,6 +242,35 @@ class MainAppFrame(tk.Frame):
         if not validation["success"]:
             messagebox.showerror("Error", validation["message"])
             return
+        
+    def rate_dish(self):
+        rate_dish_popup = RateDishPopup(self, self.master.registration.users[self.user_email]["ratings"])
+        self.wait_window(rate_dish_popup)
+
+class RateDishPopup(tk.Toplevel):
+    def __init__(self, master, ratings):
+        super().__init__(master)
+        self.title("Rate Dish")
+
+        tk.Label(self, text="Dish Name:").pack(pady=5)
+        self.dish_name_entry = tk.Entry(self)
+        self.dish_name_entry.pack(pady=5)
+
+        tk.Label(self, text="Rating (1-5):").pack(pady=5)
+        self.rating_entry = tk.Entry(self)
+        self.rating_entry.pack(pady=5)
+
+        tk.Button(self, text="Submit", command=self.submit_rating).pack(pady=10)
+
+    def submit_rating(self):
+        dish_name = self.dish_name_entry.get()
+        rating = int(self.rating_entry.get())
+        if 1 <= rating <= 5:
+            self.master.ratings[dish_name] = rating
+            messagebox.showinfo("Success", f"Rated {dish_name} with {rating} stars")
+        else:
+            messagebox.showerror("Error", "Rating must be between 1 and 5")
+        self.destroy()
 class FavoritesViewPopup(tk.Toplevel):
     def __init__(self, master, favorites):
         super().__init__(master)
