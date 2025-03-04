@@ -1,6 +1,35 @@
 import unittest
 from unittest import mock  # Import the mock module to simulate payment gateway responses.
 
+class FakePaymentGateway:
+    """
+    A simplified fake version of a payment gateway.
+    It simulates payment success or failure without connecting to an actual system.
+    """
+    def process_payment(self, method, details, amount):
+        """
+        Processes the payment and returns a fake response based on simple logic.
+
+        Args:
+            method (str): Payment method (e.g., 'credit_card').
+            details (dict): Payment details (e.g., card number).
+            amount (float): Amount to be charged.
+
+        Returns:
+            dict: A fake payment response.
+        """
+        # Simulate successful transaction for any valid card.
+        if method == "credit_card" and len(details.get("card_number", "")) == 16:
+            return {"status": "success", "transaction_id": "fake123"}
+
+        # Simulate card decline for a specific card number.
+        if method == "credit_card" and details["card_number"] == "1111222233334444":
+            return {"status": "failure", "message": "Card declined"}
+
+        # Simulate generic failure for any other cases.
+        return {"status": "failure", "message": "Invalid payment details"}
+
+
 # PaymentProcessing Class
 class PaymentProcessing:
     """
@@ -14,6 +43,7 @@ class PaymentProcessing:
         Initializes the PaymentProcessing class with available payment gateways.
         """
         self.available_gateways = ["credit_card", "paypal"]
+        self.payment_gateway = FakePaymentGateway()  # Initialize the fake gateway
 
     def validate_payment_method(self, payment_method, payment_details):
         """
@@ -299,8 +329,16 @@ class TestPaymentProcessing(unittest.TestCase):
             result = self.payment_processing.process_payment(order, "credit_card", payment_details)
             self.assertEqual(result, "Payment successful, Order confirmed")
 
+class TestPaymentProcessing(unittest.TestCase):
+    def setUp(self):
+        self.payment_processing = PaymentProcessing(payment_gateway=FakePaymentGateway())  # Use the fake gateway
 
+    def test_process_payment_success(self):
+        order = {"total_amount": 100.00}
+        payment_details = {"card_number": "1234567812345678", "expiry_date": "12/25", "cvv": "123"}
 
+        result = self.payment_processing.process_payment(order, "credit_card", payment_details)
+        self.assertEqual(result, "Payment successful, Order confirmed")
 
 if __name__ == "__main__":
     unittest.main()  # Run the unit tests.

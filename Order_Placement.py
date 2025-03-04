@@ -464,6 +464,75 @@ class TestOrderPlacementEdgeCases(unittest.TestCase):
         expected_tax = round(9.99 * 0.10, 2)  # 10% tax
         self.assertAlmostEqual(total_info["tax"], expected_tax, places=2)
 
+from unittest import mock
+# New tests with mocking
+class TestOrderPlacementMocking(unittest.TestCase):
+    """
+    Unit tests for the OrderPlacement class using mocking to simulate external dependencies.
+    """
+    def setUp(self):
+        """
+        Sets up the test environment by creating instances of necessary classes.
+        """
+        self.restaurant_menu = RestaurantMenu(available_items=["Burger", "Pizza", "Salad"])
+        self.user_profile = UserProfile(delivery_address="123 Main St")
+        self.cart = Cart()
+        self.order = OrderPlacement(self.cart, self.user_profile, self.restaurant_menu)
+
+    def test_mock_payment_method_called_successfully(self):
+        """
+        Test that confirms the payment method's 'process_payment' is called with the correct amount.
+        """
+        self.cart.add_item("Burger", 8.99, 2)
+        payment_method = PaymentMethod()
+
+        with mock.patch.object(payment_method, 'process_payment', return_value=True) as mock_payment:
+            self.order.confirm_order(payment_method)
+
+            # Verify that 'process_payment' was called once with the correct total amount.
+            mock_payment.assert_called_once_with(8.99 * 2 + 8.99 * 2 * 0.10 + 5.0)  # Subtotal + Tax + Delivery Fee
+
+    def test_mock_invalid_payment_method(self):
+        """
+        Test that confirms the payment fails and ensures that 'process_payment' is called.
+        """
+        self.cart.add_item("Pizza", 12.99, 1)
+        payment_method = PaymentMethod()
+
+        with mock.patch.object(payment_method, 'process_payment', return_value=False) as mock_payment:
+            result = self.order.confirm_order(payment_method)
+
+            # Verify that 'process_payment' was called once and returned False
+            mock_payment.assert_called_once_with(12.99 + 12.99 * 0.10 + 5.0)  # Subtotal + Tax + Delivery Fee
+            self.assertFalse(result["success"])
+            self.assertEqual(result["message"], "Payment failed")
+
+    def test_mock_notification_on_status_change(self):
+        """
+        Test that verifies the notification function is called when the order status is updated.
+        """
+        self.cart.add_item("Pizza", 12.99, 1)
+        payment_method = PaymentMethod()
+
+        # Mock the 'notify' function to test status change without sending real notifications.
+        with mock.patch.object(self.order, 'notify') as mock_notify:
+            result = self.order.confirm_order(payment_method)
+
+            # Verify the notify function was called after status change
+            mock_notify.assert_called_with("Pending")  # The initial status
+            self.assertTrue(result["success"])
+
+    def test_mock_cart_item_addition(self):
+        """
+        Test that verifies adding items to the cart and mocking the internal cart method.
+        """
+        with mock.patch.object(self.cart, 'add_item', return_value="Mocked item added to cart") as mock_add_item:
+            response = self.cart.add_item("Burger", 8.99, 2)
+
+            # Verify that the add_item method was called
+            mock_add_item.assert_called_once_with("Burger", 8.99, 2)
+            self.assertEqual(response, "Mocked item added to cart")
+
     
 if __name__ == "__main__":
     unittest.main()

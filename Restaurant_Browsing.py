@@ -276,6 +276,68 @@ class TestRestaurantBrowsing(unittest.TestCase):
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0]['name'], "Sushi House")
 
+from unittest.mock import MagicMock
+
+class TestRestaurantBrowsingWithStub(unittest.TestCase):
+    """
+    Unit tests for the RestaurantBrowsing class, using a stub to simulate the restaurant database.
+    """
+
+    def setUp(self):
+        """
+        Set up the test case by initializing a stubbed RestaurantDatabase and RestaurantBrowsing instance.
+        """
+        # Create a stub for the get_restaurants() method
+        self.database_stub = MagicMock()
+        self.database_stub.get_restaurants.return_value = [
+            {"name": "Italian Bistro", "cuisine": "Italian", "location": "Downtown", "rating": 4.5, 
+             "price_range": "$$", "delivery": True},
+            {"name": "Sushi House", "cuisine": "Japanese", "location": "Midtown", "rating": 4.8, 
+             "price_range": "$$$", "delivery": False},
+            {"name": "Burger King", "cuisine": "Fast Food", "location": "Uptown", "rating": 4.0, 
+             "price_range": "$", "delivery": True},
+            {"name": "Taco Town", "cuisine": "Mexican", "location": "Downtown", "rating": 4.2, 
+             "price_range": "$", "delivery": True},
+            {"name": "Pizza Palace", "cuisine": "Italian", "location": "Uptown", "rating": 3.9, 
+             "price_range": "$$", "delivery": True}
+        ]
+        
+        # Initialize the RestaurantBrowsing class with the stubbed database
+        self.browsing = RestaurantBrowsing(self.database_stub)
+
+    def test_search_by_cuisine_with_stub(self):
+        """
+        Test searching for restaurants by cuisine type using the stubbed database.
+        """
+        results = self.browsing.search_by_cuisine("Italian")
+        self.assertEqual(len(results), 2)  # There should be 2 Italian restaurants
+        self.assertTrue(all([restaurant['cuisine'] == "Italian" for restaurant in results]))  # Check if all returned restaurants are Italian
+
+    def test_search_by_location_with_stub(self):
+        """
+        Test searching for restaurants by location using the stubbed database.
+        """
+        results = self.browsing.search_by_location("Downtown")
+        self.assertEqual(len(results), 2)  # There should be 2 restaurants located Downtown
+        self.assertTrue(all([restaurant['location'] == "Downtown" for restaurant in results]))  # Check if all returned restaurants are in Downtown
+
+    def test_search_by_rating_with_stub(self):
+        """
+        Test searching for restaurants by minimum rating using the stubbed database.
+        """
+        results = self.browsing.search_by_rating(4.0)
+        self.assertEqual(len(results), 4)  # There should be 4 restaurants with a rating >= 4.0
+        self.assertTrue(all([restaurant['rating'] >= 4.0 for restaurant in results]))  # Check if all returned restaurants have a rating >= 4.0
+
+    def test_search_by_filters_with_stub(self):
+        """
+        Test searching for restaurants by multiple filters using the stubbed database.
+        """
+        results = self.browsing.search_by_filters(cuisine_type="Italian", location="Downtown", min_rating=4.0)
+        self.assertEqual(len(results), 1)  # Only one restaurant should match all the filters
+        self.assertEqual(results[0]['name'], "Italian Bistro")  # The result should be "Italian Bistro"
+
+
 
 
 
