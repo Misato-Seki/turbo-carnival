@@ -1,6 +1,35 @@
 import unittest
 from unittest import mock  # Import the mock module to simulate payment gateway responses.
 
+class FakePaymentGateway:
+    """
+    A simplified fake version of a payment gateway.
+    It simulates payment success or failure without connecting to an actual system.
+    """
+    def process_payment(self, method, details, amount):
+        """
+        Processes the payment and returns a fake response based on simple logic.
+
+        Args:
+            method (str): Payment method (e.g., 'credit_card').
+            details (dict): Payment details (e.g., card number).
+            amount (float): Amount to be charged.
+
+        Returns:
+            dict: A fake payment response.
+        """
+        # Simulate successful transaction for any valid card.
+        if method == "credit_card" and len(details.get("card_number", "")) == 16:
+            return {"status": "success", "transaction_id": "fake123"}
+
+        # Simulate card decline for a specific card number.
+        if method == "credit_card" and details["card_number"] == "1111222233334444":
+            return {"status": "failure", "message": "Card declined"}
+
+        # Simulate generic failure for any other cases.
+        return {"status": "failure", "message": "Invalid payment details"}
+
+
 # PaymentProcessing Class
 class PaymentProcessing:
     """
@@ -14,6 +43,7 @@ class PaymentProcessing:
         Initializes the PaymentProcessing class with available payment gateways.
         """
         self.available_gateways = ["credit_card", "paypal"]
+        self.payment_gateway = FakePaymentGateway()  # Initialize the fake gateway
 
     def validate_payment_method(self, payment_method, payment_details):
         """
@@ -211,7 +241,104 @@ class TestPaymentProcessing(unittest.TestCase):
     #     result = self.payment_processing.process_payment(order, "credit_card", payment_details)
     #     self.assertIn("Error: Invalid payment method", result)  # The method will try to process but fail because order is empty
 
+    # === 異常系テスト ===
+    def test_validate_payment_method_none_method(self):
+        """
+        Test case for validation failure when payment method is None.
+        """
+        payment_details = {"card_number": "1234567812345678", "expiry_date": "12/25", "cvv": "123"}
+        with self.assertRaises(ValueError) as context:
+            self.payment_processing.validate_payment_method(None, payment_details)
+        self.assertEqual(str(context.exception), "Invalid payment method")
 
+    def test_validate_payment_method_none_details(self):
+        """
+        Test case for validation failure when payment details are None.
+        """
+        with self.assertRaises(ValueError) as context:
+            self.payment_processing.validate_payment_method("credit_card", None)
+        self.assertEqual(str(context.exception), "Invalid credit card details")
+    
+    def test_process_payment_negative_amount(self):
+        """
+        Test case for payment processing failure with a negative order amount.
+        """
+        order = {"total_amount": -100.00}  # Invalid negative amount
+        payment_details = {"card_number": "1234567812345678", "expiry_date": "12/25", "cvv": "123"}
+        
+        result = self.payment_processing.process_payment(order, "credit_card", payment_details)
+        self.assertIn("Error", result)  # Expecting an error message
+    
+    # === 境界値テスト ===
+    def test_validate_credit_card_min_length_card_number(self):
+        """
+        Test case for credit card validation with a card number of 15 digits (boundary case - invalid).
+        """
+        payment_details = {"card_number": "123456781234567", "expiry_date": "12/25", "cvv": "123"}
+        result = self.payment_processing.validate_credit_card(payment_details)
+        self.assertFalse(result)
+    
+    def test_validate_credit_card_max_length_card_number(self):
+        """
+        Test case for credit card validation with a card number of 17 digits (boundary case - invalid).
+        """
+        payment_details = {"card_number": "12345678123456789", "expiry_date": "12/25", "cvv": "123"}
+        result = self.payment_processing.validate_credit_card(payment_details)
+        self.assertFalse(result)
+    
+    def test_validate_credit_card_valid_length_card_number(self):
+        """
+        Test case for credit card validation with a valid 16-digit card number (boundary case - valid).
+        """
+        payment_details = {"card_number": "1234567812345678", "expiry_date": "12/25", "cvv": "123"}
+        result = self.payment_processing.validate_credit_card(payment_details)
+        self.assertTrue(result)
+    
+    def test_validate_credit_card_min_length_cvv(self):
+        """
+        Test case for credit card validation with a CVV of 2 digits (boundary case - invalid).
+        """
+        payment_details = {"card_number": "1234567812345678", "expiry_date": "12/25", "cvv": "12"}
+        result = self.payment_processing.validate_credit_card(payment_details)
+        self.assertFalse(result)
+    
+    def test_validate_credit_card_max_length_cvv(self):
+        """
+        Test case for credit card validation with a CVV of 4 digits (boundary case - invalid).
+        """
+        payment_details = {"card_number": "1234567812345678", "expiry_date": "12/25", "cvv": "1234"}
+        result = self.payment_processing.validate_credit_card(payment_details)
+        self.assertFalse(result)
+    
+    def test_validate_credit_card_valid_length_cvv(self):
+        """
+        Test case for credit card validation with a valid 3-digit CVV (boundary case - valid).
+        """
+        payment_details = {"card_number": "1234567812345678", "expiry_date": "12/25", "cvv": "123"}
+        result = self.payment_processing.validate_credit_card(payment_details)
+        self.assertTrue(result)
+    
+    def test_process_payment_zero_amount(self):
+        """
+        Test case for payment processing with an order amount of zero (boundary case - valid scenario).
+        """
+        order = {"total_amount": 0.00}
+        payment_details = {"card_number": "1234567812345678", "expiry_date": "12/25", "cvv": "123"}
+        
+        with mock.patch.object(self.payment_processing, 'mock_payment_gateway', return_value={"status": "success"}):
+            result = self.payment_processing.process_payment(order, "credit_card", payment_details)
+            self.assertEqual(result, "Payment successful, Order confirmed")
+
+class TestPaymentProcessing(unittest.TestCase):
+    def setUp(self):
+        self.payment_processing = PaymentProcessing(payment_gateway=FakePaymentGateway())  # Use the fake gateway
+
+    def test_process_payment_success(self):
+        order = {"total_amount": 100.00}
+        payment_details = {"card_number": "1234567812345678", "expiry_date": "12/25", "cvv": "123"}
+
+        result = self.payment_processing.process_payment(order, "credit_card", payment_details)
+        self.assertEqual(result, "Payment successful, Order confirmed")
 
 if __name__ == "__main__":
     unittest.main()  # Run the unit tests.
