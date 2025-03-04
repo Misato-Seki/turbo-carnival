@@ -393,6 +393,77 @@ class TestOrderPlacement(unittest.TestCase):
         self.assertEqual(total_info["delivery_fee"], 5.0)  # Delivery fee should still apply.
         self.assertEqual(total_info["total"], 5.0)  # Total should be equal to delivery fee when cart is empty.
 
+# invalid inputs or boundary conditions
+class TestOrderPlacementEdgeCases(unittest.TestCase):
+    """
+    Unit tests for edge cases and abnormal scenarios in the OrderPlacement class.
+    """
+    def setUp(self):
+        self.restaurant_menu = RestaurantMenu(available_items=["Burger", "Pizza", "Salad"])
+        self.user_profile = UserProfile(delivery_address="123 Main St")
+        self.cart = Cart()
+        self.order = OrderPlacement(self.cart, self.user_profile, self.restaurant_menu)
+
+    # 異常系テスト
+    def test_add_item_with_negative_quantity(self):
+        """Test adding an item with a negative quantity should not be allowed."""
+        result = self.cart.add_item("Burger", 8.99, -2)
+        self.assertEqual(self.cart.view_cart(), [])  # Negative quantity should not be added
+
+    def test_add_item_with_negative_price(self):
+        """Test adding an item with a negative price should not be allowed."""
+        result = self.cart.add_item("Burger", -8.99, 2)
+        self.assertEqual(self.cart.view_cart(), [])  # Negative price should not be allowed
+
+    def test_remove_nonexistent_item(self):
+        """Test removing an item that does not exist in the cart."""
+        result = self.cart.remove_item("Pasta")
+        self.assertEqual(result, "Removed Pasta from cart")  # Ensure no crash occurs
+
+    def test_confirm_order_with_empty_delivery_address(self):
+        """Test confirming an order with an empty delivery address."""
+        self.user_profile.delivery_address = ""
+        self.cart.add_item("Pizza", 12.99, 1)
+        payment_method = PaymentMethod()
+        result = self.order.confirm_order(payment_method)
+        self.assertFalse(result["success"])
+        self.assertEqual(result["message"], "Order validation failed")
+
+    def test_payment_with_zero_amount(self):
+        """Test processing payment with zero amount should fail."""
+        payment_method = PaymentMethod()
+        self.assertFalse(payment_method.process_payment(0))
+
+    def test_payment_with_negative_amount(self):
+        """Test processing payment with negative amount should fail."""
+        payment_method = PaymentMethod()
+        self.assertFalse(payment_method.process_payment(-100))
+
+    # 境界値テスト
+    def test_update_item_quantity_to_one(self):
+        """Test updating an item's quantity to 1."""
+        self.cart.add_item("Burger", 8.99, 5)
+        result = self.cart.update_item_quantity("Burger", 1)
+        self.assertEqual(result, "Updated Burger quantity to 1")
+
+    def test_add_item_with_zero_price(self):
+        """Test adding an item with a price of 0."""
+        result = self.cart.add_item("Water", 0.00, 2)
+        self.assertEqual(len(self.cart.view_cart()), 1)  # Ensure item is still added
+
+    def test_calculate_total_large_quantity(self):
+        """Test calculating total for a large quantity of an item."""
+        self.cart.add_item("Pizza", 10.00, 10000)  # Large quantity
+        total_info = self.cart.calculate_total()
+        self.assertGreater(total_info["total"], 100000)  # Ensure correct calculation
+
+    def test_tax_calculation_precision(self):
+        """Test tax calculation precision for edge cases."""
+        self.cart.add_item("Pizza", 9.99, 1)  # Price close to decimal rounding issue
+        total_info = self.cart.calculate_total()
+        expected_tax = round(9.99 * 0.10, 2)  # 10% tax
+        self.assertAlmostEqual(total_info["tax"], expected_tax, places=2)
+
     
 if __name__ == "__main__":
     unittest.main()

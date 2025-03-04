@@ -224,6 +224,59 @@ class TestRestaurantBrowsing(unittest.TestCase):
     #     self.assertEqual(len(results), 0)  # No restaurants should have a negative rating
     #     self.assertTrue(all([restaurant['rating'] >= 0 for restaurant in results]))  # All restaurants should have valid ratings
 
+    # 異常系テスト
+    def test_search_by_invalid_cuisine(self):
+        """
+        Test searching for restaurants with an invalid or non-existent cuisine type.
+        """
+        results = self.browsing.search_by_cuisine("NonExistentCuisine")
+        self.assertEqual(len(results), 0)
+
+    def test_search_by_invalid_location(self):
+        """
+        Test searching for restaurants with an invalid or non-existent location.
+        """
+        results = self.browsing.search_by_location("Nowhere")
+        self.assertEqual(len(results), 0)
+
+    def test_search_by_invalid_rating(self):
+        """
+        Test searching for restaurants with an invalid negative rating.
+        """
+        results = self.browsing.search_by_rating(-1.0)
+        self.assertEqual(len(results), 0)
+    
+    def test_search_by_non_numeric_rating(self):
+        """
+        Test searching for restaurants with a non-numeric rating.
+        """
+        with self.assertRaises(TypeError):
+            self.browsing.search_by_rating("High")
+
+    # 境界値テスト
+    def test_search_by_minimum_rating_boundary(self):
+        """
+        Test searching for restaurants with the exact lowest rating in the dataset.
+        """
+        results = self.browsing.search_by_rating(3.9)
+        self.assertTrue(any([restaurant['rating'] == 3.9 for restaurant in results]))
+
+    def test_search_by_maximum_rating_boundary(self):
+        """
+        Test searching for restaurants with the exact highest rating in the dataset.
+        """
+        results = self.browsing.search_by_rating(4.8)
+        self.assertTrue(any([restaurant['rating'] == 4.8 for restaurant in results]))
+
+    def test_search_by_filters_with_edge_cases(self):
+        """
+        Test searching for restaurants using filters that match only a single result.
+        """
+        results = self.browsing.search_by_filters(cuisine_type="Japanese", location="Midtown", min_rating=4.8)
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]['name'], "Sushi House")
+
+
 
 
 if __name__ == '__main__':

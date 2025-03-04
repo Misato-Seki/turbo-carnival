@@ -155,6 +155,80 @@ class TestUserRegistration(unittest.TestCase):
         self.assertFalse(result['success'])  # Ensures registration fails due to empty confirm password.
         self.assertEqual(result['error'], "Passwords do not match")  # Checks the specific error message.
 
+    # Boundary Tests
+    def test_password_minimum_length(self):
+        """
+        Test case for password with the minimum required length (8 characters).
+        It verifies that a password with exactly 8 characters is accepted as valid.
+        """
+        result = self.registration.register("user@example.com", "Pass1234", "Pass1234")
+        self.assertTrue(result['success'])  # Ensures that the registration is successful.
+        self.assertEqual(result['message'], "Registration successful, confirmation email sent")  # Checks the success message.
+
+    def test_password_with_no_digits(self):
+        """
+        Test case for password without digits.
+        It verifies that a password that does not contain any digits fails.
+        """
+        result = self.registration.register("user@example.com", "Password", "Password")
+        self.assertFalse(result['success'])  # Ensures registration fails due to missing digits.
+        self.assertEqual(result['error'], "Password is not strong enough")  # Checks the specific error message.
+
+    def test_password_with_no_letters(self):
+        """
+        Test case for password without letters.
+        It verifies that a password that does not contain any letters fails.
+        """
+        result = self.registration.register("user@example.com", "12345678", "12345678")
+        self.assertFalse(result['success'])  # Ensures registration fails due to missing letters.
+        self.assertEqual(result['error'], "Password is not strong enough")  # Checks the specific error message.
+
+    def test_password_exactly_eight_characters(self):
+        """
+        Test case for a password with exactly 8 characters, which is the minimum length required.
+        """
+        result = self.registration.register("user@example.com", "A1b2C3d4", "A1b2C3d4")
+        self.assertTrue(result['success'])  # Ensures registration is successful.
+        self.assertEqual(result['message'], "Registration successful, confirmation email sent")  # Checks the success message.
+
+    def test_password_more_than_16_characters(self):
+        """
+        Test case for a password with more than 16 characters.
+        It verifies that a password longer than 16 characters is accepted.
+        """
+        result = self.registration.register("user@example.com", "A1b2C3d4E5f6G7h8", "A1b2C3d4E5f6G7h8")
+        self.assertTrue(result['success'])  # Ensures registration is successful.
+        self.assertEqual(result['message'], "Registration successful, confirmation email sent")  # Checks the success message.
+
+    # Abnormal Tests
+    def test_email_with_special_characters(self):
+        """
+        Test case for email with special characters.
+        It verifies that emails containing special characters other than '@' and '.' are rejected.
+        """
+        result = self.registration.register("user$@example.com", "Password123", "Password123")
+        self.assertFalse(result['success'])  # Ensures registration fails due to special characters in the email.
+        self.assertEqual(result['error'], "Invalid email format")  # Checks the specific error message.
+
+    def test_password_with_spaces(self):
+        """
+        Test case for password containing spaces.
+        It verifies that a password containing spaces is rejected.
+        """
+        result = self.registration.register("user@example.com", "Password 123", "Password 123")
+        self.assertFalse(result['success'])  # Ensures registration fails due to spaces in the password.
+        self.assertEqual(result['error'], "Password is not strong enough")  # Checks the specific error message.
+
+    def test_confirm_password_mismatch_after_password_change(self):
+        """
+        Test case where the user enters a password and then modifies the confirmation password.
+        It verifies that the password and confirmation password mismatch is caught correctly after changing.
+        """
+        result = self.registration.register("user@example.com", "Password123", "Password123")
+        self.registration.users["user@example.com"]["password"] = "NewPassword123"  # Simulating a password change
+        result = self.registration.register("user@example.com", "NewPassword123", "MismatchedPassword123")
+        self.assertFalse(result['success'])  # Ensures registration fails due to password confirmation mismatch.
+        self.assertEqual(result['error'], "Passwords do not match")  # Checks the specific error message.
 
 if __name__ == '__main__':
     unittest.main()
