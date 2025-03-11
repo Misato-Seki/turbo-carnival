@@ -1,5 +1,6 @@
 import unittest
 from unittest import mock  # Import the mock module to simulate payment gateway responses.
+from unittest.mock import MagicMock
 
 class FakePaymentGateway:
     """
@@ -140,6 +141,38 @@ class PaymentProcessing:
         # Mock a successful transaction.
         return {"status": "success", "transaction_id": "abc123"}
 
+# Integration tests - Top-layer
+class OrderController:
+    def __init__(self, payment_service, notification_service):
+        self.payment_service = payment_service  # Stub initially
+        self.notification_service = notification_service  # Stub initially
+
+    def place_order(self, order_details, payment_details):
+        payment_result = self.payment_service.process_payment(order_details, payment_details)
+        if payment_result["status"] == "success":
+            self.notification_service.send_notification("Order placed successfully!")
+            return "Order Confirmed"
+        return "Order Failed"
+
+# Integration tests - Middle-layer
+class PaymentService:
+    def __init__(self, payment_gateway):
+        self.payment_gateway = payment_gateway  # Driver initially
+
+    def process_payment(self, order, payment_details):
+        return self.payment_gateway.process_payment("credit_card", payment_details, order["total_amount"])
+
+# Stub for Integration tests
+class NotificationService:
+    def send_notification(self, message):
+        return f"Notification sent: {message}"
+
+# Integration tests - Bottom-layer
+class PaymentGateway:
+    def process_payment(self, method, details, amount):
+        if method == "credit_card" and len(details.get("card_number", "")) == 16:
+            return {"status": "success", "transaction_id": "abc123"}
+        return {"status": "failure", "message": "Invalid payment details"}
 
 # Unit tests for PaymentProcessing class
 class TestPaymentProcessing(unittest.TestCase):
@@ -339,6 +372,51 @@ class TestPaymentProcessing(unittest.TestCase):
 
         result = self.payment_processing.process_payment(order, "credit_card", payment_details)
         self.assertEqual(result, "Payment successful, Order confirmed")
+
+class TestSandwichIntegration(unittest.TestCase):
+    def setUp(self):
+        self.payment_gateway = PaymentGateway()  # Real component (Bottom-Up)
+        self.payment_service = PaymentService(self.payment_gateway)  # Connecting layers
+        self.notification_service = NotificationService()  # Stub
+        self.order_controller = OrderController(self.payment_service, self.notification_service)  # Top-Down
+
+    def test_successful_order(self):
+        order = {"total_amount": 100.00}
+        payment_details = {"card_number": "1234567812345678", "expiry_date": "12/25", "cvv": "123"}
+        
+        # Mocking notification to avoid external dependencies
+        self.notification_service.send_notification = MagicMock(return_value="Notification sent: Order placed successfully!")
+        
+        result = self.order_controller.place_order(order, payment_details)
+        self.assertEqual(result, "Order Confirmed")
+    
+    def test_failed_order_due_to_invalid_payment(self):
+        order = {"total_amount": 100.00}
+        payment_details = {"card_number": "1111222233334444", "expiry_date": "12/25", "cvv": "123"}  # Simulated failure
+
+        # Mocking the payment gateway to return a failure response
+        with mock.patch.object(self.payment_service.payment_gateway, 'process_payment', return_value={"status": "failure", "message": "Card declined"}):
+            result = self.order_controller.place_order(order, payment_details)
+            self.assertEqual(result, "Order Failed")
+    
+    def test_notification_sent_on_successful_order(self):
+        """
+        Test case to ensure that the notification is sent when the order is successful.
+        """
+        order = {"total_amount": 100.00}
+        payment_details = {"card_number": "1234567812345678", "expiry_date": "12/25", "cvv": "123"}
+        
+        # Mocking notification to avoid actual side effects
+        self.notification_service.send_notification = MagicMock(return_value="Notification sent: Order placed successfully!")
+        
+        # Place the order
+        result = self.order_controller.place_order(order, payment_details)
+
+        # Ensure that the notification service was called
+        self.notification_service.send_notification.assert_called_once_with("Order placed successfully!")
+        
+        # Check the order confirmation result
+        self.assertEqual(result, "Order Confirmed")
 
 if __name__ == "__main__":
     unittest.main()  # Run the unit tests.
